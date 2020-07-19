@@ -1,9 +1,3 @@
-"""
-DO NOT CLICK ON A IMAGE OF A BOOK
-It's not coded yet it will enter a loop and stop responding, will be fixed soon
-Also i recently learned about globals, so i will do some adjustments with the scenes's function so they don't return unnecessary variables
-"""
-
 import pygame
 import os
 import io   # Za pravenje na temp file na slika od knigata
@@ -95,6 +89,16 @@ class BooksGUI:
         self.title = titl
         self.title_pos = title_pos
 
+    def resize_image(self, size_x, size_y):
+        # Za u narednata scena koga klikne na slikata da bide pogolema
+        self.image = pygame.transform.scale(self.image, (size_x, size_y))
+
+    def draw_image(self, **kwargs):
+        if 'pos' in kwargs:
+            screen.blit(self.image, kwargs.get('pos'))
+        else:
+            screen.blit(self.image, self.image_pos)
+
     def blit_text(self, font, color=pygame.Color('white')):
         word_height = 0
         words = [word.split(' ') for word in self.title.splitlines()]  # 2D array where each row is a list of words.
@@ -118,12 +122,6 @@ class BooksGUI:
             x = self.title_pos[0]  # Reset the x.
             y += word_height  # Start on new row.
 
-    def draw_image(self, **kwargs):
-        if 'pos' in kwargs:
-            screen.blit(self.image, kwargs.get('pos'))
-        else:
-            screen.blit(self.image, self.image_pos)
-
     def hande_event(self, ev):
         if ev.type == pygame.MOUSEBUTTONDOWN:
             # Ako kliknes na slikata na knigata
@@ -133,8 +131,9 @@ class BooksGUI:
                 self.is_clicked = True
 
 
-def search_scene(serch, main_run, draw_books=False):
-    while serch:
+def search_scene():
+    global search, running, show_books
+    while search:
         # Ovoa e search scene, tuka e input box i unasa ime na knigata
         screen.fill(GRAY)
         search_box.update()
@@ -143,19 +142,19 @@ def search_scene(serch, main_run, draw_books=False):
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 # Tuka treba som izleze od search scene da izgase celoto ama nekje taka nesto
-                main_run = False
-                serch = False
+                running = False
+                search = False
             # Od klasata, proveruva dali si kliknal na s_box, enter, backspace i so tekst upisuvas
             search_box.handle_event(ev)
             if search_box.enter:
                 search_book = search_box.rText
-                draw_books = True
-                serch = False
+                show_books = True
+                search = False
                 for book_dict in scraper.scrape(search_book):
                     # Od scrapero stava rezultatite u 2 arrays
                     images.append(book_dict["image"])
                     titles.append(book_dict["book"])
-    return main_run, search, draw_books, images, titles
+    return images, titles
 
 
 def create_books(img_x, img_y, title_x, title_y):
@@ -188,11 +187,12 @@ def draw_searched_text(text, pos):
     screen.blit(searcher_text, pos)
 
 
-def show_boks(show_buks, main_run, boks):
+def show_boks(boks):
+    global search, show_books, running
+    search = False
     clicked_on_book = False
     selected_bok = 0
-    serch = False
-    while show_buks:
+    while show_books:
         # Show books scene, pokazuva gi knigite na ekrano
         screen.fill(GRAY)
         for ev in pygame.event.get():
@@ -201,31 +201,36 @@ def show_boks(show_buks, main_run, boks):
                 if book.is_clicked:
                     selected_bok = book.id
                     clicked_on_book = True
-                    show_buks = False
+                    show_books = False
+                    print(f"Klikna na {book.id} clicked_book = {clicked_on_book}")
                 if ev.type == pygame.QUIT:
                     # Serch na True a main_run na false za koa klikne "X" da se vrne na search scene
                     # serch = True
-                    main_run = False
-                    show_buks = False
+                    running = False
+                    show_books = False
         for book in boks:
             book.draw_image()
             book.blit_text(font2)
         # Da pokaze kolku results najde
         draw_searched_text(search_box.rText, (30, 25))
         pygame.display.flip()
-    return main_run, serch, clicked_on_book, selected_bok
+    return clicked_on_book, selected_bok
 
 
-def clicked_book_scene(main_run, book_id):
-    show_book = True
-    while show_book:
+def clicked_book_scene(book_id):
+    global running
+    clicked_book = books[book_id]
+    clicked_book.resize_image(95, 125)
+    posl_scene = True
+    while posl_scene:
         screen.fill(GRAY)
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
-                main_run = False
-                show_book = False
-        books[book_id].draw_image(pos=(100, 100))
-    return main_run
+                running = False
+                posl_scene = False
+                print(f"running e {running} posl_scene e {posl_scene}")   # Ovoa rabote se e ok nekje da crta
+        clicked_book.draw_image(pos=(75, 75))
+        pygame.display.flip()
 
 
 search_box = InputBox(100, 70, 700, 32)    # 700 e za dzabe zatoa so odma se smene width oti nema tekst upisano
@@ -245,7 +250,7 @@ while running:
     books = []
 
     # Ovoa e search_scene
-    running, search, show_books, images, titles = search_scene(search, running)
+    images, titles = search_scene()
 
     print("Posle search pred da init")
 
@@ -255,11 +260,12 @@ while running:
 
         print("posle init")
         # Da ne proveruva u funkc dali show_books e true ili false, ako e vekje false
-        running, search, book_clicked, selected_book = show_boks(show_books, running, books)
+        book_clicked, selected_book = show_boks(books)
 
         if book_clicked:
-            clicked_book_scene(running, selected_book)
+            print("Stigna pred posl scene")
+            clicked_book_scene(selected_book)
 
-    input("Kraj na loop")
+    # input("Kraj na loop")
 
 pygame.quit()
