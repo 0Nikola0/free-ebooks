@@ -1,30 +1,7 @@
 """
-09.Jul.2020
-- Pocetok
-############
-10 -||-
-- Stavav tie 3te funkc, da naprae slika, da ja pokaze i input box u funkc staeno
-- Dzabe gi stavav nema logika nisto toa
-############
-11 -||-
-- Trgnav trite funkc od vcera oti bea za nigde
-- Staviv u main while loop 2 posebni eden za koa searcha drugio za da pokaze slikite
-- Napraviv posebna funkc za search_scene
-############
-- Staviv show books u posebna funkc
-############
-14 -||-
-- Staviv naslovo na knigata da produze u nareden red ako e pregolem naslovo
-############
-15 -||-
-- Menjav fontovite
-- Sega proveruva dali si kliknal na nekoja kniga
-############
-17 -||-
-- Srediv goleminata na window
-- Napraviv da pokazuva grid 3x3 knigi
-- Presmetuvav rastojanieto megju niv i mestiv na teksto goleminata
-- Napraviv posebna funkc za pravenjeto na knigite od klasa
+DO NOT CLICK ON A IMAGE OF A BOOK
+It's not coded yet it will enter a loop and stop responding, will be fixed soon
+Also i recently learned about globals, so i will do some adjustments with the scenes's function so they don't return unnecessary variables
 """
 
 import pygame
