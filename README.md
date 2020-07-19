@@ -4,7 +4,8 @@ This is one of my first project done with OOP, if I can improve anything say it 
 Requirements:
 - Pygame
 - IO
-- Urllib
+- Urllib  
+
 Requirements for the scraper:
 - BS4 (Beautiful Soup)
 - Requests
