@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 from requests import get
+from urllib.request import urlopen
+from urllib.error import HTTPError
 
 vkupno_knigi = 0
 
@@ -11,40 +13,35 @@ def scrape(search_text):
     page = get(url)
     soup = BeautifulSoup(page.content, 'html.parser')
 
-    k = 0
     book_list = []
-    # full_dict = {}
-    # json_file = open("searched_books_json.txt", "w")
 
     book_blocks = soup.find_all('li', class_='booklink')
-    for book_block in book_blocks:
-        k += 1
-        # Ako nemama slika da ne prae problem, ako ima ke naprae override
-        img = 'NoImage'
-        x = 'http://www.gutenberg.org'
-
-        img_elem = book_block.find('img', class_='cover-thumb')
+    for i, book_block in enumerate(book_blocks):
         book_name = book_block.find('span', class_='title')
         author = book_block.find('span', class_='subtitle')
-        book_link = x + book_block.find('a', class_='link')['href']
+        downloads = book_block.find('span', class_='extra')
+        # [href] za da najde linko, a [8:] zatoa so privte 8 char se /ebook/ pa posle e book id
+        book_id = book_block.find('a', class_='link')['href'][8:]
 
-        # if (img_elem, book_name, author, book_link) is not None:
+        # kaj cover.small.jpg moze da bide cover.medium.jpg small e 50x75 a medium e 200x300
+        image_url = f"http://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.cover.small.jpg"
         try:
-            img = x + img_elem['src']
-            # Tuka go praveme u .text oti ako e NoneType ke naprae error i nema da produze nadole
-            # Mos so try i except ke bese poarno nz
+            # image_link - Samo za testing
+            urlopen(image_url).read()
             book_name = book_name.text
             author = author.text
+            downloads = downloads.text
         except AttributeError:
             continue
         except TypeError:
             continue
+        except HTTPError:
+            continue
 
-        full_dict = {'book': book_name, 'author': author, 'image': img, 'book_link': book_link}
+        full_dict = {'book': book_name, 'author': author, 'book_id': book_id, 'downloads': downloads}
         book_list.append(full_dict)
 
-        print(book_name)
-        if k >= 9:
+        if i >= 9:
             # Kolku pati da naprae loop-o, kolku knigi da stae u nizata
             break
 
@@ -56,4 +53,4 @@ def scrape(search_text):
 
 
 if __name__ == "__main__":
-    print(scrape("python"))
+    print(scrape("tr"))
