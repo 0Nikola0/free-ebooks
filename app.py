@@ -5,8 +5,8 @@ from urllib.request import urlopen
 import scraper
 
 # x, y coords deka da se ukluce window screen od pygame
-# Title bar e 30 (y), da se pojave na sred screen (x) treba da e 413, za testing podobro mi e 800
-windowPosition = (800, 45)
+# Title bar e 30 (y), da se pojave na sred screen (x) treba da e 413, za testing podobro mi e 800, 45
+windowPosition = (800, 43)
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % windowPosition
 
 pygame.init()
@@ -16,8 +16,9 @@ screenWidth, screenHeight = 525, 682
 screen = pygame.display.set_mode((screenWidth, screenHeight))
 COLOR_INACTIVE = pygame.Color('lightskyblue3')
 COLOR_ACTIVE = pygame.Color('dodgerblue2')
-FONT = pygame.font.SysFont(None, 32, bold=True)
-font2 = pygame.font.SysFont('Mono', 16)
+FONT1 = pygame.font.SysFont(None, 32, bold=True)
+FONT2 = pygame.font.SysFont('Mono', 16)
+FONT3 = pygame.font.SysFont('Arial', 28)
 
 
 class InputBox:
@@ -26,7 +27,7 @@ class InputBox:
         self.rect = pygame.Rect(x, y, w, h)
         self.color = COLOR_INACTIVE
         self.text = text
-        self.txt_surface = FONT.render(text, True, self.color)
+        self.txt_surface = FONT1.render(text, True, self.color)
         self.active = False
 
         self.rText = ''
@@ -57,7 +58,7 @@ class InputBox:
                 else:
                     self.text += evnt.unicode
                 # Pisuva go teksto pa
-                self.txt_surface = FONT.render(self.text, True, self.color)
+                self.txt_surface = FONT1.render(self.text, True, self.color)
 
     def update(self):
         # Zgolemuva input box ako teksto e pogolem
@@ -72,11 +73,16 @@ class InputBox:
 
 
 class BooksGUI:
-    def __init__(self, book_id, image_link, titl, img_pos, title_pos):
+    def __init__(self, gui_id, book_id, author, titl, downlads, img_pos, title_pos):
+        # Ovoa e za da znam na koja kniga e kliknal
+        self.gui_id = gui_id
+        self.book_title = titl
+        self.book_author = author
+        self.downloads = downlads
+        self.book_id = book_id
         self.is_clicked = False
-        self.id = book_id
-        # Linko deka so e slikata (https://www...)
-        self.image_link = urlopen(image_link).read()
+        self.img_url = f"http://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.cover.small.jpg"
+        self.image_link = urlopen(self.img_url).read()
         # Zima ja slikata od linko i ja prae u temp file
         self.image_file = io.BytesIO(self.image_link)
         # Prae ja slikata u slika od bytes file
@@ -88,10 +94,6 @@ class BooksGUI:
         self.image_pos.topleft = img_pos
         self.title = titl
         self.title_pos = title_pos
-
-    def resize_image(self, size_x, size_y):
-        # Za u narednata scena koga klikne na slikata da bide pogolema
-        self.image = pygame.transform.scale(self.image, (size_x, size_y))
 
     def draw_image(self, **kwargs):
         if 'pos' in kwargs:
@@ -127,8 +129,52 @@ class BooksGUI:
             # Ako kliknes na slikata na knigata
             # Tuka mora da e image_pos oti toa e rect, a slikata e surface i surface nema collide point argument
             if self.image_pos.collidepoint(ev.pos):
-                print(f"Klikna na knigata {self.title} so id {self.id}")
+                print(f"Klikna na knigata {self.title} so id {self.gui_id}")
                 self.is_clicked = True
+
+
+class SelectedBook:
+    def __init__(self, title, author, downlads, book_id):
+        self.title = title
+        self.author = f"by   {author}"
+        self.downloads = downlads
+        self.book_id = book_id
+        self.img_url = f"http://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.cover.medium.jpg"
+        # Otvara linko za slikata
+        self.image_link = urlopen(self.img_url).read()
+        # Zima ja slikata od linko i ja prae u temp file
+        self.image_file = io.BytesIO(self.image_link)
+        # Prae ja slikata u slika od bytes file
+        self.image = pygame.image.load(self.image_file)
+        # Menjame dimenzii (200x300 e obicnata medium)
+        self.image = pygame.transform.scale(self.image, (200, 300))
+
+    def draw_image(self, img_pos):
+        screen.blit(self.image, img_pos)
+
+    def blit_text(self, font, text, title_pos, max_wh, color=pygame.Color('white')):
+        word_height = 0
+        words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
+        space = font.size(' ')[0]  # The width of a space.
+        # title_pos[0] zatoa so e tuple (x, y) na men mi treba samo x
+        max_width = max_wh[0]
+        max_height = max_wh[1]
+        x, y = title_pos
+        for line in words:
+            for word in line:
+                word_surface = font.render(word, 0, color)
+                word_width, word_height = word_surface.get_size()
+                if x + word_width >= max_width:
+                    x = title_pos[0]  # Reset the x.
+                    y += word_height  # Start on new row.
+                if y > max_height:
+                    # Ako e pregolem teksto da ne produzuva kaj narednata kniga prestane da go pisuva
+                    break
+                screen.blit(word_surface, (x, y))
+                x += word_width + space
+            x = title_pos[0]  # Reset the x.
+            y += word_height  # Start on new row.
+        return y
 
 
 def search_scene():
@@ -152,8 +198,10 @@ def search_scene():
                 search = False
                 for book_dict in scraper.scrape(search_book):
                     # Od scrapero stava rezultatite u 2 arrays
-                    images.append(book_dict["image"])
                     titles.append(book_dict["book"])
+                    authors.append(book_dict["author"])
+                    book_ids.append(book_dict["book_id"])
+                    downloads.append(book_dict["downloads"])
     return images, titles
 
 
@@ -162,11 +210,12 @@ def create_books(img_x, img_y, title_x, title_y):
     i = 0
     base_img_pos_x = img_x
     base_title_pos_x = title_x
-    while i < len(images):
+    while i < len(book_ids):
         try:
             # Tuka mora try zatoa so moze da se sluce da ima pomalku od 3 knigi
             for _ in range(3):
-                books_arr.append(BooksGUI(i, images[i], titles[i], (img_x, img_y), (title_x, title_y)))
+                print(f"Creating book number {i+1}")
+                books_arr.append(BooksGUI(i, book_ids[i], authors[i], titles[i], downloads[i], (img_x, img_y), (title_x, title_y)))
                 i += 1
                 # Zgolemuva x za da odat na desno
                 img_x += 170
@@ -183,7 +232,7 @@ def create_books(img_x, img_y, title_x, title_y):
 
 def draw_searched_text(text, pos):
     text = f"{str(scraper.vkupno_knigi)} Results for: {text}"
-    searcher_text = FONT.render(text, True, COLOR_ACTIVE)
+    searcher_text = FONT1.render(text, True, COLOR_ACTIVE)
     screen.blit(searcher_text, pos)
 
 
@@ -192,6 +241,7 @@ def show_boks(boks):
     search = False
     clicked_on_book = False
     selected_bok = 0
+    print("show books")
     while show_books:
         # Show books scene, pokazuva gi knigite na ekrano
         screen.fill(GRAY)
@@ -199,10 +249,10 @@ def show_boks(boks):
             for book in boks:   # Tuka proveruvame dali e kliknal na knigata
                 book.hande_event(ev)
                 if book.is_clicked:
-                    selected_bok = book.id
+                    selected_bok = book.gui_id
                     clicked_on_book = True
                     show_books = False
-                    print(f"Klikna na {book.id} clicked_book = {clicked_on_book}")
+                    print(f"Klikna na {book.gui_id} clicked_book = {clicked_on_book}")
                 if ev.type == pygame.QUIT:
                     # Serch na True a main_run na false za koa klikne "X" da se vrne na search scene
                     # serch = True
@@ -210,17 +260,17 @@ def show_boks(boks):
                     show_books = False
         for book in boks:
             book.draw_image()
-            book.blit_text(font2)
+            book.blit_text(FONT2)
         # Da pokaze kolku results najde
         draw_searched_text(search_box.rText, (30, 25))
         pygame.display.flip()
     return clicked_on_book, selected_bok
 
 
-def clicked_book_scene(book_id):
+def clicked_book_scene(gui_id):
     global running
-    clicked_book = books[book_id]
-    clicked_book.resize_image(95, 125)
+    c_b_info = [books[gui_id].book_title, books[gui_id].book_author, books[gui_id].downloads, books[gui_id].book_id]
+    clicked_book = SelectedBook(c_b_info[0], c_b_info[1], c_b_info[2], c_b_info[3])
     posl_scene = True
     while posl_scene:
         screen.fill(GRAY)
@@ -228,8 +278,13 @@ def clicked_book_scene(book_id):
             if ev.type == pygame.QUIT:
                 running = False
                 posl_scene = False
-                print(f"running e {running} posl_scene e {posl_scene}")   # Ovoa rabote se e ok nekje da crta
-        clicked_book.draw_image(pos=(75, 75))
+        clicked_book.draw_image((40, 40))
+        # Naslovo na knigata
+        book_y = clicked_book.blit_text(FONT3, clicked_book.title, (250, 50), (515, 600))
+        # Imeto na avtoro
+        clicked_book.blit_text(FONT3, clicked_book.author, (250, book_y + 15), (515, 320))
+        # Downloads
+        clicked_book.blit_text(FONT3, clicked_book.downloads, (50, 345), (240, 350))
         pygame.display.flip()
 
 
@@ -239,6 +294,9 @@ running = True
 enter = False
 images = []
 titles = []
+authors = []
+book_ids = []
+downloads = []
 search = True
 show_books = False
 img_pos_x = 55
