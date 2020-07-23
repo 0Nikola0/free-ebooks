@@ -1,11 +1,9 @@
-# App made with PyGame for Gutenberg's website
+# App made with PyGame for direct downloading books from Gutenberg
 
-This is one of my first project done with OOP, if I can improve anything say it freely, any feedback is appreciated.
+Just run the app.py file 
 
 Requirements:
-- pygame
-- urllib  
-
-Requirements for the scraper:
-- bs4 (Beautiful Soup)
+- pygame 
+- urllib
+- beautifulsoup4
 - requests
