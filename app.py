@@ -1,8 +1,10 @@
+
 import pygame
 import os
 import io   # Za pravenje na temp file na slika od knigata
 from urllib.request import urlopen
 import scraper
+import downloader
 
 # x, y coords deka da se ukluce window screen od pygame
 # Title bar e 30 (y), da se pojave na sred screen (x) treba da e 413, za testing podobro mi e 800, 45
@@ -48,7 +50,6 @@ class InputBox:
         if evnt.type == pygame.KEYDOWN:
             if self.active:
                 if evnt.key == pygame.K_RETURN:
-                    print(self.text)
                     self.enter = True
                     self.rText = self.text
                     self.active = False
@@ -129,7 +130,6 @@ class BooksGUI:
             # Ako kliknes na slikata na knigata
             # Tuka mora da e image_pos oti toa e rect, a slikata e surface i surface nema collide point argument
             if self.image_pos.collidepoint(ev.pos):
-                print(f"Klikna na knigata {self.title} so id {self.gui_id}")
                 self.is_clicked = True
 
 
@@ -152,7 +152,8 @@ class SelectedBook:
     def draw_image(self, img_pos):
         screen.blit(self.image, img_pos)
 
-    def blit_text(self, font, text, title_pos, max_wh, color=pygame.Color('white')):
+    @staticmethod
+    def blit_text(font, text, title_pos, max_wh, color=pygame.Color('white')):
         word_height = 0
         words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
         space = font.size(' ')[0]  # The width of a space.
@@ -175,6 +176,24 @@ class SelectedBook:
             x = title_pos[0]  # Reset the x.
             y += word_height  # Start on new row.
         return y
+
+
+class DownloadButton:
+    def __init__(self, font, text, pos):
+        self.font = font
+        self.text = font.render(text, True, COLOR_ACTIVE)
+        self.text_pos = self.text.get_rect()
+        self.text_pos.topleft = pos
+        self.is_clicked = False
+
+    def handle_events(self, evnt):
+        if evnt.type == pygame.MOUSEBUTTONDOWN:
+            # noinspection PyArgumentList
+            if self.text_pos.collidepoint(evnt.pos):
+                self.is_clicked = True
+
+    def blit_text(self):
+        screen.blit(self.text, self.text_pos)
 
 
 def search_scene():
@@ -214,7 +233,6 @@ def create_books(img_x, img_y, title_x, title_y):
         try:
             # Tuka mora try zatoa so moze da se sluce da ima pomalku od 3 knigi
             for _ in range(3):
-                print(f"Creating book number {i+1}")
                 books_arr.append(BooksGUI(i, book_ids[i], authors[i], titles[i], downloads[i], (img_x, img_y), (title_x, title_y)))
                 i += 1
                 # Zgolemuva x za da odat na desno
@@ -241,7 +259,6 @@ def show_boks(boks):
     search = False
     clicked_on_book = False
     selected_bok = 0
-    print("show books")
     while show_books:
         # Show books scene, pokazuva gi knigite na ekrano
         screen.fill(GRAY)
@@ -252,7 +269,6 @@ def show_boks(boks):
                     selected_bok = book.gui_id
                     clicked_on_book = True
                     show_books = False
-                    print(f"Klikna na {book.gui_id} clicked_book = {clicked_on_book}")
                 if ev.type == pygame.QUIT:
                     # Serch na True a main_run na false za koa klikne "X" da se vrne na search scene
                     # serch = True
@@ -271,6 +287,13 @@ def clicked_book_scene(gui_id):
     global running
     c_b_info = [books[gui_id].book_title, books[gui_id].book_author, books[gui_id].downloads, books[gui_id].book_id]
     clicked_book = SelectedBook(c_b_info[0], c_b_info[1], c_b_info[2], c_b_info[3])
+
+    plain_text = DownloadButton(FONT3, "Plain text", (50, 420))
+    epub_imgs = DownloadButton(FONT3, "Epub with images", (50, 460))
+    epub_noimgs = DownloadButton(FONT3, "Epub without images", (50, 500))
+    kindle_imgs = DownloadButton(FONT3, "Kindle with images", (50, 540))
+    kindle_noimgs = DownloadButton(FONT3, "Kindle without images", (50, 580))
+
     posl_scene = True
     while posl_scene:
         screen.fill(GRAY)
@@ -278,6 +301,30 @@ def clicked_book_scene(gui_id):
             if ev.type == pygame.QUIT:
                 running = False
                 posl_scene = False
+            # Proveruva dali si kliknal na download button
+            plain_text.handle_events(ev)
+            epub_imgs.handle_events(ev)
+            epub_noimgs.handle_events(ev)
+            kindle_imgs.handle_events(ev)
+            kindle_noimgs.handle_events(ev)
+
+            if plain_text.is_clicked:
+
+                downloader.download_txt(clicked_book.book_id, clicked_book.title)
+                plain_text.is_clicked = False
+            if epub_imgs.is_clicked:
+                downloader.download_epub(clicked_book.book_id, clicked_book.title, True)
+                epub_imgs.is_clicked = False
+            if epub_noimgs.is_clicked:
+                downloader.download_epub(clicked_book.book_id, clicked_book.title, False)
+                epub_noimgs.is_clicked = False
+            if kindle_imgs.is_clicked:
+                downloader.download_kindle(clicked_book.book_id, clicked_book.title, True)
+                kindle_imgs.is_clicked = False
+            if kindle_noimgs.is_clicked:
+                downloader.download_kindle(clicked_book.book_id, clicked_book.title, False)
+                kindle_noimgs.is_clicked = False
+
         clicked_book.draw_image((40, 40))
         # Naslovo na knigata
         book_y = clicked_book.blit_text(FONT3, clicked_book.title, (250, 50), (515, 600))
@@ -285,6 +332,13 @@ def clicked_book_scene(gui_id):
         clicked_book.blit_text(FONT3, clicked_book.author, (250, book_y + 15), (515, 320))
         # Downloads
         clicked_book.blit_text(FONT3, clicked_book.downloads, (50, 345), (240, 350))
+        # download buttons
+        plain_text.blit_text()
+        epub_imgs.blit_text()
+        epub_noimgs.blit_text()
+        kindle_imgs.blit_text()
+        kindle_noimgs.blit_text()
+
         pygame.display.flip()
 
 
@@ -310,18 +364,15 @@ while running:
     # Ovoa e search_scene
     images, titles = search_scene()
 
-    print("Posle search pred da init")
 
     if show_books:
         # Koa klikne enter na input box, tuka praeme init na knigite od klasata so ke gi pokazuva
         books = create_books(img_pos_x, img_pos_y, title_pos_x, title_pos_y)
 
-        print("posle init")
         # Da ne proveruva u funkc dali show_books e true ili false, ako e vekje false
         book_clicked, selected_book = show_boks(books)
 
         if book_clicked:
-            print("Stigna pred posl scene")
             clicked_book_scene(selected_book)
 
     # input("Kraj na loop")
