@@ -1,6 +1,8 @@
-# App made with PyGame for direct downloading books from Gutenberg
+# App made with PyGame for direct downloading ebooks
 
-Just run the app.py file 
+Download the files and put them in the same folder.
+Then run the app.py file.
+All the books you download will be in the same folder.
 
 Requirements:
 - pygame 
