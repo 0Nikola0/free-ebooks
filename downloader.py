@@ -1,17 +1,4 @@
-# 04.07.2020
-# Mos ovoa celoto ke moze u CLass da go staam??
-# samo da ne zbrka rabotite oti koa scrapero rabote u array gi stava drugite rabote
-# 05. -||-
-# Namesto link poarno ke e samo book ID da prate u funkc, i onam u GUI spored book id da se
 import requests
-
-
-# Samo za proba bese ovoa
-def download_image_only(book_id):
-    image_link = f"https://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.cover.medium.jpg"
-    img = requests.get(image_link)
-    with open("temp.jpg", "wb") as file:
-        file.write(img.content)
 
 
 def download_txt(book_id, book_name):
