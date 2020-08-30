@@ -9,3 +9,10 @@ Requirements:
 - urllib
 - beautifulsoup4
 - requests
+
+
+![ImageOne](https://imgur.com/a/KuvXIB6)
+
+![ImageTwo](https://imgur.com/a/BMllDNr)
+
+![ImageThree](https://imgur.com/a/3RKPh9K)
