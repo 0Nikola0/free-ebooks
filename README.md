@@ -11,8 +11,8 @@ Requirements:
 - requests
 
 
-![ImageOne](https://imgur.com/a/KuvXIB6)
+![](https://imgur.com/MPrRLgv)
 
-![ImageTwo](https://imgur.com/a/BMllDNr)
+![](https://imgur.com/Fa9qooF)
 
-![ImageThree](https://imgur.com/a/3RKPh9K)
+![](https://imgur.com/81LHlkr)
