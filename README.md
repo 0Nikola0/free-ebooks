@@ -13,6 +13,6 @@ Requirements:
 
 ![](https://i.imgur.com/MPrRLgv.jpg)
 
-![](https://imgur.com/Fa9qooF)
+![](https://imgur.com/Fa9qooF.jpg)
 
-![](https://imgur.com/81LHlkr)
+![](https://imgur.com/81LHlkr.jpg)
