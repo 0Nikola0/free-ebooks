@@ -11,7 +11,7 @@ Requirements:
 - requests
 
 
-![](https://imgur.com/MPrRLgv)
+![](https://i.imgur.com/MPrRLgv.jpg)
 
 ![](https://imgur.com/Fa9qooF)
 
